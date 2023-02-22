@@ -1,0 +1,147 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: sumologic-metrics
+spec:
+  mode: statefulset
+  replicas: 3
+  serviceAccount: sumologic-otelcol-metrics-collector
+  targetAllocator:
+    serviceAccount: sumologic-otelcol-targetallocator
+    enabled: true
+    prometheusCR:
+      enabled: true
+  config: |
+    receivers:
+      prometheus:
+        config:
+          global:
+            scrape_interval: 30s
+        target_allocator:
+          endpoint: http://sumologic-metrics-targetallocator
+          interval: 30s
+          collector_id: ${POD_NAME}
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+      batch:
+        send_batch_size: 1000
+        timeout: 10s
+
+    exporters:
+      otlphttp:
+        endpoint: http://collection-sumologic-metadata-metrics.sumologic.svc.cluster.local.:4318
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sumologic-otelcol-targetallocator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sumologic-otelcol-targetallocator
+subjects:
+- kind: ServiceAccount
+  name: sumologic-otelcol-targetallocator
+  namespace: sumologic
+roleRef:
+  kind: ClusterRole
+  name: otelcol-targetallocator
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otelcol-targetallocator
+rules:
+- apiGroups: [""]
+  resources: 
+    - pods
+    - nodes
+    - services
+    - endpoints
+    - configmaps
+    - secrets
+    - namespaces
+  verbs: 
+    - get
+    - watch
+    - list
+- apiGroups: ["apps"]
+  resources: 
+    - statefulsets
+    - services
+    - endpoints
+  verbs: 
+    - get
+    - watch
+    - list
+- apiGroups: ["networking.k8s.io"]
+  resources: 
+    - ingresses
+  verbs: 
+    - get
+    - watch
+    - list
+- apiGroups: ["monitoring.coreos.com"]
+  resources:
+    - servicemonitors
+    - podmonitors
+  verbs:
+    - get
+    - watch
+    - list
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sumologic-otelcol-metrics-collector
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sumologic-otelcol-metrics-collector
+subjects:
+- kind: ServiceAccount
+  name: sumologic-otelcol-metrics-collector
+  namespace: sumologic
+roleRef:
+  kind: ClusterRole
+  name: sumologic-otelcol-metrics-collector
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: sumologic-otelcol-metrics-collector
+rules:
+- apiGroups: [""]
+  resources: 
+    - pods
+    - nodes
+    - nodes/metrics
+    - services
+    - endpoints
+  verbs: 
+    - get
+    - watch
+    - list
+- apiGroups: ["networking.k8s.io"]
+  resources: 
+    - ingresses
+  verbs: 
+    - get
+    - watch
+    - list
+- nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+  verbs: ["get"]

@@ -17,6 +17,10 @@ receivers:
         paths = [
 {{ include "metric.endpoints" . | indent 10 }}
         ]
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
 extensions:
   health_check: {}
 {{ if .Values.metadata.persistence.enabled }}
@@ -318,6 +322,7 @@ service:
     metrics:
       receivers:
         - telegraf
+        - otlp
       processors:
         - memory_limiter
         - metricstransform

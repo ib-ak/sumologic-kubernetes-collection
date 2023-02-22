@@ -4493,7 +4493,7 @@ tailing-sidecar-operator:
 ## Configure OpenTelemetry Operator - Instrumentation
 ## ref: https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator
 opentelemetry-operator:
-  enabled: false
+  enabled: true
 
   ## Specific for Sumo Logic chart - Instrumentation resource creation
   instrumentationJobImage:
@@ -4536,6 +4536,11 @@ opentelemetry-operator:
       issuerRef: {}
 
   manager:
+    image:
+      tag: v0.70.0
+    collectorImage:
+      repository: "public.ecr.aws/sumologic/sumologic-otel-collector"
+      tag: "0.71.0-sumo-0"
     env:
     resources:
       limits:

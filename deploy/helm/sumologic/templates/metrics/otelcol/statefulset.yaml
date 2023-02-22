@@ -123,6 +123,9 @@ spec:
         - name: prom-write
           containerPort: 9888
           protocol: TCP
+        - name: otlp
+          containerPort: 4318
+          protocol: TCP
         - name: metrics
           containerPort: 8888
           protocol: TCP
