@@ -1644,6 +1644,9 @@ kube-prometheus-stack:
         - action: keep
           regex: (?:container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_fs_usage_bytes|container_fs_limit_bytes|container_cpu_cfs_throttled_seconds_total|container_network_receive_bytes_total|container_network_transmit_bytes_total)
           sourceLabels: [__name__]
+        - action: drop
+          sourceLabels: [__name__, container, pod]
+          regex: (?:container_cpu_usage_seconds_total|container_memory_working_set_bytes);;
         - action: labelmap
           regex: container_name
           replacement: container
